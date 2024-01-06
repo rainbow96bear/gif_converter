@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,8 +17,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// 정적 파일 서빙을 위한 미들웨어 추가
-	r.Static("/static", "./static")
-	r.StaticFile("/output.gif", "./output.gif")
+	r.Static("/converted", "./converted")
 
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
@@ -43,7 +43,7 @@ func main() {
 		// 변환 결과를 웹 페이지에 표시
 		c.HTML(http.StatusOK, "result.html", gin.H{
 			"VideoPath": videoPath,
-			"GIFPath":   gifPath,
+			"GIFPath":   "/converted/"+gifPath,
 		})
 	})
 
@@ -51,12 +51,14 @@ func main() {
 }
 
 func convertToGIF(videoPath, outputName string) string {
-	outputPath := filepath.Join("converted", outputName+".gif")
+	currentTime := time.Now().Format("20060102_150405")
+	filename := fmt.Sprintf("rainbowbear_%s", currentTime+".gif")
+	outputPath := filepath.Join("converted", filename)
 	cmd := exec.Command("ffmpeg", "-i", videoPath, "-vf", "fps=10,scale=320:-1", outputPath)
 	err := cmd.Run()
 	if err != nil {
 		log.Fatal(err)
 		return ""
 	}
-	return outputPath
+	return filename
 }
